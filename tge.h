@@ -42,6 +42,9 @@ extern "C" {
 #define TGE_KEY_Y 24
 #define TGE_KEY_Z 25
 
+/*The default amount of time after last key press where a key will count as pressed*/
+#define TGE_KEY_PRESS_MILLIS 200
+
 extern unsigned short tge_rows;
 extern unsigned short tge_cols;
 
@@ -83,9 +86,9 @@ bool tge_cursor_move_up(unsigned short n);
 bool tge_cursor_move_down(unsigned short n);
 
 struct tge_vec3 {
-  int x;  
-  int y;  
-  int z;  
+  int x;
+  int y;
+  int z;
 };
 
 struct tge_game_object {
@@ -113,6 +116,8 @@ typedef void (*tge_resize_callback) (unsigned short rows, unsigned short cols);
 void tge_set_resize_callback(tge_resize_callback callback);
 /*Draw a game object to the screen*/
 void tge_draw_game_object(struct tge_game_object game_object);
+/*Clear a game object from the screen*/
+void tge_clear_game_object(struct tge_game_object game_object);
 
 #ifdef __cplusplus
 }

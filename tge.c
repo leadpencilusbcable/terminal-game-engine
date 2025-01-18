@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -11,7 +12,7 @@
 
 //TODO handle potential error codes from functions like tcsetattr
 //TODO I don't know if the current way of detecting keyboard input with atomics will work in actual situation
-//also it doesn't handle multiple keys concurrently
+//also it doesn't handle multiple keys concurrently which I'm not sure is possible by reading terminal stdin
 
 static struct termios term_init_flags;
 static struct termios term_cur_flags;
@@ -26,7 +27,14 @@ unsigned short tge_cols;
 unsigned short tge_cursor_x;
 unsigned short tge_cursor_y;
 
-static atomic_bool tge_keys_pressed[TGE_KEYS_SIZE];
+static atomic_llong tge_keys_pressed[TGE_KEYS_SIZE];
+
+static struct timeval tv;
+
+static long long current_time_ms(void){
+  gettimeofday(&tv, NULL);
+  return (((long long) tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+}
 
 static void set_window_size(void){
   struct winsize winsize;
@@ -40,7 +48,7 @@ static void handle_terminal_resize(int sig){
   set_window_size();
 
   if(resize_callback != NULL){
-    resize_callback(tge_rows, tge_cols);    
+    resize_callback(tge_rows, tge_cols);
   }
 }
 
@@ -61,28 +69,28 @@ inline void tge_cursor_on(void){
 }
 
 void tge_echo_off(void){
-  term_cur_flags.c_lflag &= ~ECHO; 
+  term_cur_flags.c_lflag &= ~ECHO;
   tcsetattr(STDIN_FILENO, TCSANOW, &term_cur_flags);
 }
 
 void tge_echo_on(void){
-  term_cur_flags.c_lflag |= ECHO; 
+  term_cur_flags.c_lflag |= ECHO;
   tcsetattr(STDIN_FILENO, TCSANOW, &term_cur_flags);
 }
 
 void tge_canonical_mode_off(void){
-  term_cur_flags.c_lflag &= ~ICANON; 
+  term_cur_flags.c_lflag &= ~ICANON;
   tcsetattr(STDIN_FILENO, TCSANOW, &term_cur_flags);
 }
 
 void tge_canonical_mode_on(void){
-  term_cur_flags.c_lflag |= ICANON; 
+  term_cur_flags.c_lflag |= ICANON;
   tcsetattr(STDIN_FILENO, TCSANOW, &term_cur_flags);
 }
 
 void tge_raw_mode(void){
   term_cur_flags.c_iflag &= ~(ICRNL | IXON);
-  term_cur_flags.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG); 
+  term_cur_flags.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
   tcsetattr(STDIN_FILENO, TCSANOW, &term_cur_flags);
 }
 
@@ -161,107 +169,107 @@ void* update_keys(void* args){
     switch(c){
       case 'a':
       case 'A':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_A], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_A], current_time_ms(), memory_order_relaxed);
         break;
       case 'b':
       case 'B':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_B], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_B], current_time_ms(), memory_order_relaxed);
         break;
       case 'c':
       case 'C':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_C], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_C], current_time_ms(), memory_order_relaxed);
         break;
       case 'd':
       case 'D':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_D], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_D], current_time_ms(), memory_order_relaxed);
         break;
       case 'e':
       case 'E':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_E], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_E], current_time_ms(), memory_order_relaxed);
         break;
       case 'f':
       case 'F':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_F], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_F], current_time_ms(), memory_order_relaxed);
         break;
       case 'g':
       case 'G':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_G], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_G], current_time_ms(), memory_order_relaxed);
         break;
       case 'h':
       case 'H':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_H], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_H], current_time_ms(), memory_order_relaxed);
         break;
       case 'i':
       case 'I':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_I], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_I], current_time_ms(), memory_order_relaxed);
         break;
       case 'j':
       case 'J':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_J], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_J], current_time_ms(), memory_order_relaxed);
         break;
       case 'k':
       case 'K':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_K], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_K], current_time_ms(), memory_order_relaxed);
         break;
       case 'l':
       case 'L':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_L], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_L], current_time_ms(), memory_order_relaxed);
         break;
       case 'm':
       case 'M':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_M], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_M], current_time_ms(), memory_order_relaxed);
         break;
       case 'n':
       case 'N':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_N], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_N], current_time_ms(), memory_order_relaxed);
         break;
       case 'o':
       case 'O':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_O], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_O], current_time_ms(), memory_order_relaxed);
         break;
       case 'p':
       case 'P':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_P], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_P], current_time_ms(), memory_order_relaxed);
         break;
       case 'q':
       case 'Q':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Q], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Q], current_time_ms(), memory_order_relaxed);
         break;
       case 'r':
       case 'R':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_R], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_R], current_time_ms(), memory_order_relaxed);
         break;
       case 's':
       case 'S':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_S], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_S], current_time_ms(), memory_order_relaxed);
         break;
       case 't':
       case 'T':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_T], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_T], current_time_ms(), memory_order_relaxed);
         break;
       case 'u':
       case 'U':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_U], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_U], current_time_ms(), memory_order_relaxed);
         break;
       case 'v':
       case 'V':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_V], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_V], current_time_ms(), memory_order_relaxed);
         break;
       case 'w':
       case 'W':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_W], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_W], current_time_ms(), memory_order_relaxed);
         break;
       case 'x':
       case 'X':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_X], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_X], current_time_ms(), memory_order_relaxed);
         break;
       case 'y':
       case 'Y':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Y], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Y], current_time_ms(), memory_order_relaxed);
         break;
       case 'z':
       case 'Z':
-        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Z], true, memory_order_relaxed);
+        atomic_store_explicit(&tge_keys_pressed[TGE_KEY_Z], current_time_ms(), memory_order_relaxed);
         break;
     }
   }
@@ -270,7 +278,10 @@ void* update_keys(void* args){
 }
 
 bool tge_key_pressed(unsigned int key_number){
-  return atomic_load_explicit(&tge_keys_pressed[key_number], memory_order_relaxed);
+  long long pressed_at_ms = atomic_load_explicit(&tge_keys_pressed[key_number], memory_order_relaxed);
+  long long current_ms = current_time_ms();
+
+  return (current_ms - pressed_at_ms) < TGE_KEY_PRESS_MILLIS;
 }
 
 void tge_reset_all_keys(void){
@@ -320,19 +331,14 @@ void tge_set_resize_callback(tge_resize_callback callback){
 }
 
 void tge_draw_game_object(struct tge_game_object game_object){
-  bool cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, game_object.pos.y); 
+  bool cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, game_object.pos.y);
 
-  unsigned short init_x_pos = tge_cursor_x;
   char* itr = game_object.text;
 
   while(*itr != '\0'){
-    if(!cursor_move_valid){
-      return;
-    }
-
     if(*itr == '\n'){
-      cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, tge_cursor_y + 1); 
-    } else {
+      cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, tge_cursor_y + 1);
+    } else if(cursor_move_valid){
       putchar(*itr);
     }
 
@@ -340,4 +346,20 @@ void tge_draw_game_object(struct tge_game_object game_object){
   }
 }
 
+void tge_clear_game_object(struct tge_game_object game_object){
+  bool cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, game_object.pos.y);
+
+  unsigned short init_x_pos = tge_cursor_x;
+  char* itr = game_object.text;
+
+  while(*itr != '\0'){
+    if(*itr == '\n'){
+      cursor_move_valid = tge_cursor_move_xy(game_object.pos.x, tge_cursor_y + 1);
+    } else if(cursor_move_valid){
+      putchar(' ');
+    }
+
+    itr++;
+  }
+}
 
