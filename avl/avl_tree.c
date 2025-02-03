@@ -4,10 +4,7 @@
 
 #include "avl_tree.h"
 
-//TODO deal with out of bounds errors
-//TODO clean code up
 //TODO allow for realloc upon needing space
-//TODO possibly allow for user to pass in pointer to their own memory so multiple trees can be alloced together
 
 static inline unsigned int left_index(unsigned int index){
   return index * 2 + 1;
@@ -132,7 +129,7 @@ static void avl_balance(struct avl_tree* avl, unsigned int* visited_indices, siz
   }
 }
 
-void avl_insert(struct avl_tree* avl, int key){
+void avl_insert(struct avl_tree* avl, unsigned int key, struct tge_data value){
   struct avl_node* cur_node;
 
   unsigned int visited_indices[avl->tree[0].height + 2];
@@ -151,19 +148,24 @@ void avl_insert(struct avl_tree* avl, int key){
 
       avl->size++;
 
-      //TODO This logic is not correct, need to go through every node above and check if its
-      //opposite tree is smaller than height of current tree with new node. If so, increment height
-      if(visited_indices_count >= 2 && avl->tree[visited_indices[visited_indices_count - 2]].height == 0){
-        for(size_t j = 0; j < visited_indices_count - 1; j++){
-          avl->tree[visited_indices[j]].height++;
+      for(size_t j = 1; j < visited_indices_count - 1; j++){
+        unsigned int visited_index = visited_indices[j];
+        struct avl_node* visited_node = &avl->tree[visited_index];
+
+        //if the current node already has a height greater than
+        //the tree after the new insertion, stop incrementing heights
+        if(visited_node->height >= j){
+          break;
         }
 
-        avl_balance(avl, visited_indices, visited_indices_count);
+        avl->tree[visited_indices[j]].height++;
       }
+
+      avl_balance(avl, visited_indices, visited_indices_count);
 
       break;
     } else if(cur_node->key == key){
-      //TODO when using key values, overwrite the value when key already exists
+      cur_node->data = value;
     } else if(cur_node->key > key){
       i = left_index(i);
     } else if(cur_node->key < key){
@@ -172,7 +174,7 @@ void avl_insert(struct avl_tree* avl, int key){
   }
 }
 
-bool avl_search(struct avl_tree* avl, int key){
+struct tge_data* avl_search(struct avl_tree* avl, int key){
   struct avl_node* cur_node;
 
   unsigned int i = 0;
@@ -181,9 +183,9 @@ bool avl_search(struct avl_tree* avl, int key){
     cur_node = &avl->tree[i];
 
     if(cur_node->height == -1){
-      return false;
+      return NULL;
     } else if(cur_node->key == key){
-      return true;
+      return &cur_node->data;
     } else if(cur_node->key > key){
       i = left_index(i);
     } else if(cur_node->key < key){
@@ -191,6 +193,6 @@ bool avl_search(struct avl_tree* avl, int key){
     }
   }
 
-  return false;
+  return NULL;
 }
 

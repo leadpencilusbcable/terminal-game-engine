@@ -1,11 +1,13 @@
 #pragma once
 
-#include <stdbool.h>
 #include <stdlib.h>
+
+#include "../tge_asset.h"
 
 struct avl_node {
   int height;
-  int key;
+  unsigned int key;
+  struct tge_data data;
 };
 
 struct avl_tree {
@@ -15,6 +17,6 @@ struct avl_tree {
 };
 
 struct avl_tree avl_create(unsigned int capacity);
-void avl_insert(struct avl_tree* avl, int key);
-bool avl_search(struct avl_tree* avl, int key);
+void avl_insert(struct avl_tree* avl, unsigned int key, struct tge_data value);
+struct tge_data* avl_search(struct avl_tree* avl, int key);
 
